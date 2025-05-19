@@ -1,22 +1,186 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>激活码生成工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f8f9fa;
+        }
 
-    <body>
-        <main class="container">
-            <h1>Welcome to PakePlus</h1>
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit">Greet</button>
-            </form>
-            <p id="greet-msg"></p>
-        </main>
-    </body>
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #343a40;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .activation-code {
+            font-family: monospace;
+            font-size: 18px;
+            color: #28a745;
+            font-weight: bold;
+            user-select: all;
+        }
+
+        .hint {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        /* 添加复制按钮样式 */
+        .copy-button {
+            padding: 5px 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .copy-button:hover {
+            background: #218838;
+        }
+        .code-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">激活码生成工具</div>
+        
+        <div class="form-group">
+            <label for="machineCode">机器码</label>
+            <div class="code-container">
+                <input type="text" id="machineCode" placeholder="请输入机器码" maxlength="8">
+                <button class="copy-button" onclick="copyText('machineCode')">复制</button>
+            </div>
+            <div class="hint">请输入8位机器码</div>
+        </div>
+
+        <button id="generateButton">生成激活码</button>
+
+        <div class="result" id="result" style="display: none;">
+            <div>激活码：</div>
+            <div class="code-container">
+                <div class="activation-code" id="activationCode"></div>
+                <button class="copy-button" onclick="copyText('activationCode')">复制</button>
+            </div>
+            <div class="hint">点击复制按钮可复制激活码</div>
+        </div>
+    </div>
+
+    <script>
+        // 复制功能
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).value || 
+                        document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('复制成功！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        // 生成激活码逻辑
+        document.getElementById('generateButton').addEventListener('click', function() {
+            const machineCode = document.getElementById('machineCode').value.trim();
+            
+            // 修改为8位验证
+            if (!/^[A-F0-9]{8}$/.test(machineCode)) {
+                alert('请输入正确的8位机器码（大写字母和数字）');
+                return;
+            }
+
+            const activationCode = generateActivationCode(machineCode);
+            document.getElementById('activationCode').textContent = activationCode;
+            document.getElementById('result').style.display = 'block';
+        });
+
+        function generateActivationCode(machineCode) {
+            // 使用相同的映射规则
+            const mapping = {
+                '0':'5', '1':'6', '2':'7', '3':'8', '4':'9',
+                '5':'0', '6':'1', '7':'2', '8':'3', '9':'4',
+                'A':'F', 'B':'E', 'C':'D', 'D':'C', 'E':'B',
+                'F':'A'
+            };
+
+            let code = '';
+            for(let i = 0; i < machineCode.length; i++) {
+                code += mapping[machineCode[i]] || machineCode[i];
+            }
+            
+            return code;
+        }
+    </script>
+</body>
 </html>
