@@ -1,186 +1,1626 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>激活码生成工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>是男人就上一万层</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
         body {
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
         }
-
-        .container {
-            background: white;
+        
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 420px;
+            min-height: 80vh;
             padding: 20px;
+            background-color: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
-
-        .title {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #343a40;
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .game-title {
             font-size: 24px;
             font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #333;
         }
-
-        .form-group {
+        
+        .current-floor, .battle-floor {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .player-stats {
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
             margin-bottom: 15px;
         }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #495057;
+        
+        .stat-row {
+            margin: 5px 0;
+            font-size: 14px;
         }
-
-        input {
+        
+        .exp-bar, .hp-bar {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            box-sizing: border-box;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            margin-top: 5px;
+            overflow: hidden;
+            position: relative;
         }
-
-        input:focus {
-            outline: none;
-            border-color: #80bdff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        
+        .exp-progress, .hp-progress {
+            height: 100%;
+            background-color: #4caf50;
+            width: 0%;
+            transition: width 0.3s;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #007bff;
+        
+        .hp-bar.enemy .hp-progress {
+            background-color: #f44336;
+            transition: none; /* 移除怪物血条的过渡效果，确保立即更新 */
+        }
+        
+        .hp-bar.player .hp-progress {
+            background-color: #2196f3;
+        }
+        
+        .tower-image {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .tower-image img {
+            width: 60%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .navigation button {
+            flex: 1;
+            margin: 0 5px;
+            padding: 12px;
+            font-size: 16px;
+            background-color: #2196f3;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            font-weight: 500;
-            margin-top: 10px;
         }
-
-        button:hover {
-            background: #0056b3;
+        
+        .navigation button:hover {
+            background-color: #0b7dda;
         }
-
-        .result {
-            margin-top: 20px;
+        
+        h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        /* 战斗界面样式 */
+        .enemy-info, .player-battle-info {
             padding: 15px;
-            background: #e9ecef;
-            border-radius: 4px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .battle-log {
+            height: 100px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+        
+        .hp-value {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            z-index: 1;
+            font-size: 12px;
+            line-height: 20px;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+        }
+        
+        .battle-result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 10;
+        }
+        
+        .battle-result.hidden {
+            display: none;
+        }
+        
+        .battle-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .battle-buttons button {
+            padding: 10px 15px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* 装备和背包界面样式 */
+        #equipment-screen, #inventory-screen {
             text-align: center;
         }
-
-        .activation-code {
-            font-family: monospace;
-            font-size: 18px;
-            color: #28a745;
-            font-weight: bold;
-            user-select: all;
+        
+        #equipment-slots, #inventory-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
         }
-
-        .hint {
-            color: #6c757d;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        /* 添加复制按钮样式 */
-        .copy-button {
-            padding: 5px 10px;
-            background: #28a745;
+        
+        #back-from-equipment, #back-from-inventory {
+            padding: 10px 15px;
+            background-color: #2196f3;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
-            margin-left: 10px;
-            font-size: 12px;
+            margin-top: 20px;
         }
-        .copy-button:hover {
-            background: #218838;
-        }
-        .code-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 10px 0;
+        
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .screen {
+                min-height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="title">激活码生成工具</div>
-        
-        <div class="form-group">
-            <label for="machineCode">机器码</label>
-            <div class="code-container">
-                <input type="text" id="machineCode" placeholder="请输入机器码" maxlength="8">
-                <button class="copy-button" onclick="copyText('machineCode')">复制</button>
-            </div>
-            <div class="hint">请输入8位机器码</div>
-        </div>
-
-        <button id="generateButton">生成激活码</button>
-
-        <div class="result" id="result" style="display: none;">
-            <div>激活码：</div>
-            <div class="code-container">
-                <div class="activation-code" id="activationCode"></div>
-                <button class="copy-button" onclick="copyText('activationCode')">复制</button>
-            </div>
-            <div class="hint">点击复制按钮可复制激活码</div>
+    <!-- 欢迎/角色创建界面 -->
+    <div id="welcome-screen" class="screen">
+        <div class="game-title">是男人就上一万层</div>
+        <h2>欢迎来到高塔挑战!</h2>
+        <p>请输入你的英雄名称，开始挑战一万层高塔的征程:</p>
+        <div style="margin: 20px 0;">
+            <input type="text" id="character-name" placeholder="输入你的英雄名称" style="padding: 10px; width: 80%; margin-bottom: 15px;">
+            <button id="start-game-btn" style="padding: 10px 15px; background-color: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer;">开始游戏</button>
         </div>
     </div>
 
+    <!-- 主界面 -->
+    <div id="main-screen" class="screen active">
+        <div class="game-title">是男人就上一万层</div>
+        <div class="current-floor">当前层数: <span id="floor-display">1</span> 层</div>
+        
+        <div class="player-stats">
+            <h3>玩家属性</h3>
+            <div class="stat-row">等级: <span id="player-level">1</span></div>
+            <div class="stat-row">攻击力: <span id="player-attack">10</span></div>
+            <div class="stat-row">防御力: <span id="player-defense">5</span></div>
+            <div class="stat-row">血量: <span id="player-hp">1000</span>/<span id="player-max-hp">1000</span></div>
+            <div class="stat-row">暴击率: <span id="player-crit-rate">1</span>%</div>
+            <div class="stat-row">暴击伤害: <span id="player-crit-damage">200</span>%</div>
+            <div class="stat-row">闪避率: <span id="player-dodge-rate">1</span>%</div>
+            <div class="stat-row">每秒挂机收益: <span id="player-idle-exp">10</span>经验</div>
+            <div class="stat-row">
+                经验值: <span id="player-exp">0</span>/<span id="player-exp-needed">100</span>
+                <div class="exp-bar">
+                    <div id="exp-progress" class="exp-progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tower-image">
+            <img src="tower.png" alt="高塔" onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22180%22%3E%3Crect%20width%3D%22100%22%20height%3D%22180%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2220%22%3E高塔%3C%2Ftext%3E%3C%2Fsvg%3E'">
+        </div>
+        
+        <div class="navigation">
+            <button id="equipment-btn">装备</button>
+            <button id="battle-btn">战斗</button>
+            <button id="inventory-btn">背包</button>
+            <button id="blessing-btn" style="background-color: #9c27b0;">开发者的祝福</button>
+            <button id="save-btn" style="background-color: #4CAF50;">保存进度</button>
+            <button id="reset-btn" style="background-color: #f44336;">重置游戏</button>
+        </div>
+    </div>
+
+    <!-- 战斗界面 -->
+    <div id="battle-screen" class="screen">
+        <div class="battle-floor">第 <span id="battle-floor-display">1</span> 层</div>
+        
+        <!-- 怪物信息 -->
+        <div class="enemy-info">
+            <h3>怪物属性</h3>
+            <div class="hp-bar enemy">
+                <div class="hp-value">
+                    <span id="enemy-current-hp">200</span>/<span id="enemy-max-hp">200</span>
+                    (<span id="enemy-hp-percent">100</span>%)
+                </div>
+                <div id="enemy-hp-progress" class="hp-progress"></div>
+            </div>
+            <div class="stat-row">攻击力: <span id="enemy-attack">3</span></div>
+            <div class="stat-row">防御力: <span id="enemy-defense">1</span></div>
+            <div class="stat-row">暴击率: <span id="enemy-crit-rate">10</span>%</div>
+            <div class="stat-row">暴击伤害: <span id="enemy-crit-damage">200</span>%</div>
+            <div class="stat-row">闪避率: <span id="enemy-dodge-rate">20</span>%</div>
+        </div>
+
+        <div class="battle-log">
+            <div id="log-container"></div>
+        </div>
+        
+        <!-- 玩家战斗信息 -->
+        <div class="player-battle-info">
+            <h3>玩家属性</h3>
+            <div class="hp-bar player">
+                <div class="hp-value">
+                    <span id="battle-player-current-hp">1000</span>/<span id="battle-player-max-hp">1000</span>
+                    (<span id="player-hp-percent">100</span>%)
+                </div>
+                <div id="player-hp-progress" class="hp-progress"></div>
+            </div>
+            <div class="stat-row">攻击力: <span id="battle-player-attack">10</span></div>
+            <div class="stat-row">防御力: <span id="battle-player-defense">5</span></div>
+            <div class="stat-row">暴击率: <span id="battle-player-crit-rate">1</span>%</div>
+            <div class="stat-row">暴击伤害: <span id="battle-player-crit-damage">200</span>%</div>
+            <div class="stat-row">闪避率: <span id="battle-player-dodge-rate">1</span>%</div>
+        </div>
+        
+        <!-- 添加退出战斗按钮 -->
+        <div style="text-align: center; margin-top: 20px; position: relative; z-index: 20;">
+            <button id="exit-battle-btn" style="padding: 10px 15px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">退出战斗</button>
+        </div>
+        
+        <div id="battle-result" class="battle-result hidden">
+            <div id="result-message"></div>
+            <div class="battle-buttons">
+                <button id="retry-btn">重新战斗</button>
+                <button id="return-main-btn">返回主界面</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 装备界面 -->
+    <div id="equipment-screen" class="screen">
+        <h2>装备</h2>
+        <div id="equipment-slots">
+            <!-- 装备槽位将通过JS动态生成 -->
+        </div>
+        <button id="back-from-equipment">返回</button>
+    </div>
+
+    <!-- 背包界面 -->
+    <div id="inventory-screen" class="screen">
+        <h2>背包</h2>
+        <div id="inventory-items">
+            <!-- 背包物品将通过JS动态生成 -->
+        </div>
+        <button id="back-from-inventory">返回</button>
+    </div>
+
+    <!-- 开发者的祝福界面 -->
+    <div id="blessing-screen" class="screen">
+        <h2>开发者的祝福</h2>
+        <p style="margin: 20px 0;">输入祝福码，获得开发者的特殊馈赠：</p>
+        <div style="margin: 20px 0;">
+            <input type="text" id="blessing-code" placeholder="请输入祝福码" style="padding: 10px; width: 80%; margin-bottom: 15px;">
+            <button id="submit-blessing" style="padding: 10px 15px; background-color: #9c27b0; color: white; border: none; border-radius: 5px; cursor: pointer;">确认</button>
+        </div>
+        <div id="blessing-result" style="margin: 20px 0; color: #9c27b0; font-weight: bold;"></div>
+        <button id="back-from-blessing" style="padding: 10px 15px; background-color: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;">返回</button>
+    </div>
+
     <script>
-        // 复制功能
-        function copyText(elementId) {
-            const text = document.getElementById(elementId).value || 
-                        document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('复制成功！');
-            }).catch(err => {
-                console.error('复制失败:', err);
-                alert('复制失败，请手动复制');
-            });
+        // 游戏状态
+        const gameState = {
+            // 玩家属性
+            player: {
+                level: 1,
+                attack: 10,
+                defense: 5,
+                maxHp: 1000,
+                currentHp: 1000,
+                critRate: 1,
+                critDamage: 200,
+                dodgeRate: 1,
+                idleExp: 10,
+                exp: 0,
+                expNeeded: 100
+            },
+            // 当前层数
+            currentFloor: 1,
+            // 战斗状态
+            battle: {
+                isActive: false,
+                enemyMaxHp: 0,
+                enemyCurrentHp: 0,
+                enemyAttack: 0,
+                enemyDefense: 0,
+                enemyCritRate: 0,
+                enemyCritDamage: 0,
+                enemyDodgeRate: 0,
+                playerTurn: true,
+                battleInterval: null,
+                forceExit: false  // 添加强制退出标志
+            },
+            // 装备系统（未完全实现）
+            equipment: [],
+            // 背包系统（未完全实现）
+            inventory: [],
+            // 记录上次登录时间，用于计算离线收益
+            lastLoginTime: Date.now()
+        };
+
+        // 界面元素
+        const elements = {
+            screens: {
+                main: document.getElementById('main-screen'),
+                battle: document.getElementById('battle-screen'),
+                equipment: document.getElementById('equipment-screen'),
+                inventory: document.getElementById('inventory-screen'),
+                welcome: document.getElementById('welcome-screen'),
+                blessing: document.getElementById('blessing-screen')
+            },
+            player: {
+                level: document.getElementById('player-level'),
+                attack: document.getElementById('player-attack'),
+                defense: document.getElementById('player-defense'),
+                hp: document.getElementById('player-hp'),
+                maxHp: document.getElementById('player-max-hp'),
+                critRate: document.getElementById('player-crit-rate'),
+                critDamage: document.getElementById('player-crit-damage'),
+                dodgeRate: document.getElementById('player-dodge-rate'),
+                idleExp: document.getElementById('player-idle-exp'),
+                exp: document.getElementById('player-exp'),
+                expNeeded: document.getElementById('player-exp-needed'),
+                expProgress: document.getElementById('exp-progress')
+            },
+            battle: {
+                playerAttack: document.getElementById('battle-player-attack'),
+                playerDefense: document.getElementById('battle-player-defense'),
+                playerCritRate: document.getElementById('battle-player-crit-rate'),
+                playerCritDamage: document.getElementById('battle-player-crit-damage'),
+                playerDodgeRate: document.getElementById('battle-player-dodge-rate'),
+                playerCurrentHp: document.getElementById('battle-player-current-hp'),
+                playerMaxHp: document.getElementById('battle-player-max-hp'),
+                playerHpPercent: document.getElementById('player-hp-percent'),
+                playerHpProgress: document.getElementById('player-hp-progress'),
+                
+                enemyAttack: document.getElementById('enemy-attack'),
+                enemyDefense: document.getElementById('enemy-defense'),
+                enemyCritRate: document.getElementById('enemy-crit-rate'),
+                enemyCritDamage: document.getElementById('enemy-crit-damage'),
+                enemyDodgeRate: document.getElementById('enemy-dodge-rate'),
+                enemyCurrentHp: document.getElementById('enemy-current-hp'),
+                enemyMaxHp: document.getElementById('enemy-max-hp'),
+                enemyHpPercent: document.getElementById('enemy-hp-percent'),
+                enemyHpProgress: document.getElementById('enemy-hp-progress'),
+                
+                logContainer: document.getElementById('log-container'),
+                floorDisplay: document.getElementById('battle-floor-display'),
+                
+                battleResult: document.getElementById('battle-result'),
+                resultMessage: document.getElementById('result-message'),
+                retryBtn: document.getElementById('retry-btn'),
+                returnMainBtn: document.getElementById('return-main-btn')
+            },
+            floor: document.getElementById('floor-display')
+        };
+
+        // 按钮事件监听
+        document.getElementById('battle-btn').addEventListener('click', startBattle);
+        document.getElementById('equipment-btn').addEventListener('click', () => showScreen('equipment'));
+        document.getElementById('inventory-btn').addEventListener('click', () => showScreen('inventory'));
+        document.getElementById('blessing-btn').addEventListener('click', () => showScreen('blessing'));
+        document.getElementById('save-btn').addEventListener('click', () => {
+            saveGame();
+            alert('游戏进度已保存！');
+        });
+        document.getElementById('back-from-equipment').addEventListener('click', () => showScreen('main'));
+        document.getElementById('back-from-inventory').addEventListener('click', () => showScreen('main'));
+        document.getElementById('back-from-blessing').addEventListener('click', () => showScreen('main'));
+        document.getElementById('submit-blessing').addEventListener('click', checkBlessingCode);
+        document.getElementById('reset-btn').addEventListener('click', resetGame);
+        elements.battle.retryBtn.addEventListener('click', retryBattle);
+        elements.battle.returnMainBtn.addEventListener('click', () => {
+            stopBattle();
+            showScreen('main');
+        });
+        document.getElementById('start-game-btn').addEventListener('click', createCharacter);
+        document.getElementById('exit-battle-btn').addEventListener('click', exitBattle);
+
+        // 页面加载完成后初始化游戏
+        window.addEventListener('load', initGame);
+
+        // 初始化游戏
+        function initGame() {
+            // 检查是否有游戏存档
+            if (localStorage.getItem('towerGame_playerData')) {
+                // 如果有存档，加载存档
+                loadGame();
+                showScreen('main');
+            } else {
+                // 如果没有存档，显示欢迎界面
+                showScreen('welcome');
+            }
+            
+            updatePlayerStats();
+            startIdleEarning();
         }
 
-        // 生成激活码逻辑
-        document.getElementById('generateButton').addEventListener('click', function() {
-            const machineCode = document.getElementById('machineCode').value.trim();
+        // 创建角色并开始游戏
+        function createCharacter() {
+            const nameInput = document.getElementById('character-name');
+            let playerName = nameInput.value.trim();
             
-            // 修改为8位验证
-            if (!/^[A-F0-9]{8}$/.test(machineCode)) {
-                alert('请输入正确的8位机器码（大写字母和数字）');
+            // 如果用户没有输入名称，则使用默认值
+            if (!playerName) {
+                playerName = "无名英雄";
+            }
+            
+            // 设置角色名称
+            gameState.player.name = playerName;
+            
+            // 设置初始登录时间
+            gameState.lastLoginTime = Date.now();
+            
+            // 保存游戏
+            saveGame();
+            
+            // 显示主界面
+            showScreen('main');
+            
+            // 显示欢迎消息
+            alert(`欢迎，${playerName}！\n开始你的高塔冒险吧！`);
+            
+            console.log(`角色 "${playerName}" 创建成功！`);
+        }
+
+        // 更新玩家属性显示
+        function updatePlayerStats() {
+            const p = gameState.player;
+            
+            // 更新主界面标题以显示角色名称（如果有）
+            if (p.name) {
+                document.querySelector('.game-title').textContent = `是男人就上一万层 - ${p.name}`;
+            } else {
+                document.querySelector('.game-title').textContent = `是男人就上一万层`;
+            }
+            
+            // 更新主界面显示
+            elements.player.level.textContent = p.level;
+            elements.player.attack.textContent = p.attack;
+            elements.player.defense.textContent = p.defense;
+            elements.player.hp.textContent = p.currentHp;
+            elements.player.maxHp.textContent = p.maxHp;
+            elements.player.critRate.textContent = p.critRate;
+            elements.player.critDamage.textContent = p.critDamage;
+            elements.player.dodgeRate.textContent = p.dodgeRate;
+            elements.player.idleExp.textContent = p.idleExp;
+            elements.player.exp.textContent = p.exp;
+            elements.player.expNeeded.textContent = p.expNeeded;
+            
+            // 更新经验条
+            const expPercentage = (p.exp / p.expNeeded) * 100;
+            elements.player.expProgress.style.width = `${expPercentage}%`;
+            
+            // 更新层数显示
+            elements.floor.textContent = gameState.currentFloor;
+            
+            // 战斗时也更新玩家属性
+            if (gameState.battle.isActive) {
+                elements.battle.playerAttack.textContent = p.attack;
+                elements.battle.playerDefense.textContent = p.defense;
+                elements.battle.playerCritRate.textContent = p.critRate;
+                elements.battle.playerCritDamage.textContent = p.critDamage;
+                elements.battle.playerDodgeRate.textContent = p.dodgeRate;
+                elements.battle.playerCurrentHp.textContent = p.currentHp;
+                elements.battle.playerMaxHp.textContent = p.maxHp;
+                
+                // 更新战斗中的血条
+                const hpPercentage = Math.max(0, Math.min(100, (p.currentHp / p.maxHp) * 100));
+                elements.battle.playerHpPercent.textContent = Math.floor(hpPercentage);
+                elements.battle.playerHpProgress.style.width = `${hpPercentage}%`;
+            }
+        }
+
+        // 挂机经验获取系统
+        function startIdleEarning() {
+            // 如果已经有计时器，不要重复创建
+            if (gameState.idleEarningInterval) {
                 return;
             }
+            
+            gameState.idleEarningInterval = setInterval(() => {
+                addExperience(gameState.player.idleExp);
+            }, 1000);
+            
+            console.log("挂机经验计时器已启动");
+        }
 
-            const activationCode = generateActivationCode(machineCode);
-            document.getElementById('activationCode').textContent = activationCode;
-            document.getElementById('result').style.display = 'block';
-        });
-
-        function generateActivationCode(machineCode) {
-            // 使用相同的映射规则
-            const mapping = {
-                '0':'5', '1':'6', '2':'7', '3':'8', '4':'9',
-                '5':'0', '6':'1', '7':'2', '8':'3', '9':'4',
-                'A':'F', 'B':'E', 'C':'D', 'D':'C', 'E':'B',
-                'F':'A'
-            };
-
-            let code = '';
-            for(let i = 0; i < machineCode.length; i++) {
-                code += mapping[machineCode[i]] || machineCode[i];
+        // 添加经验并处理升级
+        function addExperience(exp) {
+            gameState.player.exp += exp;
+            
+            // 检查是否可以升级
+            while (gameState.player.exp >= gameState.player.expNeeded) {
+                gameState.player.exp -= gameState.player.expNeeded;
+                levelUp();
             }
             
-            return code;
+            updatePlayerStats();
+        }
+
+        // 玩家升级
+        function levelUp() {
+            const p = gameState.player;
+            
+            p.level += 1;
+            p.attack += 2;
+            p.defense += 1;
+            p.maxHp += 200;
+            p.currentHp = p.maxHp; // 升级时恢复满血
+            
+            // 计算下一级所需经验
+            p.expNeeded = Math.floor(p.expNeeded * 1.2);
+            
+            // 显示升级信息
+            addBattleLog(`玩家升级了！现在是 ${p.level} 级`);
+        }
+
+        // 切换界面
+        function showScreen(screenName) {
+            // 隐藏所有界面
+            Object.values(elements.screens).forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // 显示指定界面
+            elements.screens[screenName].classList.add('active');
+        }
+
+        // 开始战斗
+        function startBattle() {
+            // 检查是否有防止自动重启的标志
+            if (gameState.preventAutoRestart) {
+                console.log("检测到防止自动重启标志，取消战斗开始");
+                return;
+            }
+            
+            // 重置强制退出标志
+            gameState.battle.forceExit = false;
+            console.log("开始新战斗，重置强制退出标志");
+            
+            showScreen('battle');
+            gameState.battle.isActive = true;
+            
+            // 重置战斗日志
+            elements.battle.logContainer.innerHTML = '';
+            
+            // 更新战斗界面显示的层数
+            elements.battle.floorDisplay.textContent = gameState.currentFloor;
+            
+            // 生成当前层的怪物
+            generateEnemy();
+            
+            // 确保怪物血条立即显示为100%
+            setTimeout(() => {
+                elements.battle.enemyHpPercent.textContent = '100';
+                elements.battle.enemyHpProgress.style.width = '100%';
+            }, 0);
+            
+            // 更新战斗界面中的玩家属性
+            updatePlayerStats();
+            
+            // 隐藏战斗结果面板
+            elements.battle.battleResult.classList.add('hidden');
+            
+            // 开始战斗循环
+            gameState.battle.playerTurn = true;
+            gameState.battle.battleInterval = setInterval(battleTurn, 10); // 每10ms执行一次战斗回合
+            
+            // 添加战斗开始日志
+            addBattleLog(`开始在第 ${gameState.currentFloor} 层的战斗！`);
+        }
+
+        // 停止战斗
+        function stopBattle() {
+            if (gameState.battle.battleInterval) {
+                clearInterval(gameState.battle.battleInterval);
+                gameState.battle.battleInterval = null;
+            }
+            gameState.battle.isActive = false;
+            console.log("战斗已停止");
+        }
+
+        // 重试战斗
+        function retryBattle() {
+            // 恢复玩家血量
+            gameState.player.currentHp = gameState.player.maxHp;
+            updatePlayerStats();
+            
+            // 隐藏战斗结果
+            elements.battle.battleResult.classList.add('hidden');
+            
+            // 重新开始战斗
+            startBattle();
+        }
+
+        // 生成当前层的怪物
+        function generateEnemy() {
+            const floor = gameState.currentFloor;
+            
+            // 根据层数设置怪物属性
+            gameState.battle.enemyAttack = 3 + (floor - 1);
+            gameState.battle.enemyDefense = 1 + (floor - 1);
+            gameState.battle.enemyMaxHp = 200 + (floor - 1) * 200;
+            gameState.battle.enemyCurrentHp = gameState.battle.enemyMaxHp;
+            gameState.battle.enemyCritRate = 10;
+            gameState.battle.enemyCritDamage = 200;
+            gameState.battle.enemyDodgeRate = 20;
+            
+            // 更新怪物属性显示
+            elements.battle.enemyAttack.textContent = gameState.battle.enemyAttack;
+            elements.battle.enemyDefense.textContent = gameState.battle.enemyDefense;
+            elements.battle.enemyCritRate.textContent = gameState.battle.enemyCritRate;
+            elements.battle.enemyCritDamage.textContent = gameState.battle.enemyCritDamage;
+            elements.battle.enemyDodgeRate.textContent = gameState.battle.enemyDodgeRate;
+            elements.battle.enemyCurrentHp.textContent = gameState.battle.enemyCurrentHp;
+            elements.battle.enemyMaxHp.textContent = gameState.battle.enemyMaxHp;
+            
+            // 由于怪物是满血状态，直接设置血条为100%
+            elements.battle.enemyHpPercent.textContent = '100';
+            elements.battle.enemyHpProgress.style.width = '100%';
+        }
+
+        // 战斗回合
+        function battleTurn() {
+            // 检查是否设置了强制退出标志
+            if (gameState.battle.forceExit) {
+                console.log("战斗回合中检测到强制退出标志，停止战斗循环");
+                stopBattle();
+                return;
+            }
+            
+            // 如果战斗未激活，停止战斗循环
+            if (!gameState.battle.isActive) {
+                stopBattle();
+                return;
+            }
+            
+            if (gameState.battle.playerTurn) {
+                // 玩家回合
+                playerAttack();
+            } else {
+                // 怪物回合
+                enemyAttack();
+            }
+            
+            // 切换回合
+            gameState.battle.playerTurn = !gameState.battle.playerTurn;
+        }
+
+        // 玩家攻击
+        function playerAttack() {
+            const p = gameState.player;
+            const e = gameState.battle;
+            
+            // 检查怪物是否闪避
+            if (Math.random() * 100 < e.enemyDodgeRate) {
+                addBattleLog('怪物闪避了攻击！');
+                return;
+            }
+            
+            // 计算伤害
+            let damage = Math.max(1, p.attack - e.enemyDefense);
+            
+            // 检查是否暴击
+            let isCrit = false;
+            if (Math.random() * 100 < p.critRate) {
+                damage = Math.floor(damage * (p.critDamage / 100));
+                isCrit = true;
+            }
+            
+            // 怪物受到伤害
+            e.enemyCurrentHp = Math.max(0, e.enemyCurrentHp - damage);
+            
+            // 更新怪物血条
+            updateEnemyHpBar();
+            
+            // 添加战斗日志
+            addBattleLog(`玩家${isCrit ? '暴击' : ''}攻击造成 ${damage} 点伤害！`);
+            
+            // 检查战斗是否结束
+            if (e.enemyCurrentHp <= 0) {
+                battleVictory();
+            }
+        }
+
+        // 怪物攻击
+        function enemyAttack() {
+            const p = gameState.player;
+            const e = gameState.battle;
+            
+            // 检查玩家是否闪避
+            if (Math.random() * 100 < p.dodgeRate) {
+                addBattleLog('玩家闪避了攻击！');
+                return;
+            }
+            
+            // 计算伤害
+            let damage = Math.max(1, e.enemyAttack - p.defense);
+            
+            // 检查是否暴击
+            let isCrit = false;
+            if (Math.random() * 100 < e.enemyCritRate) {
+                damage = Math.floor(damage * (e.enemyCritDamage / 100));
+                isCrit = true;
+            }
+            
+            // 玩家受到伤害
+            p.currentHp = Math.max(0, p.currentHp - damage);
+            
+            // 更新玩家血条显示
+            updatePlayerStats();
+            
+            // 添加战斗日志
+            addBattleLog(`怪物${isCrit ? '暴击' : ''}攻击造成 ${damage} 点伤害！`);
+            
+            // 检查战斗是否结束
+            if (p.currentHp <= 0) {
+                battleDefeat();
+            }
+        }
+
+        // 战斗胜利
+        function battleVictory() {
+            stopBattle();
+            
+            // 如果设置了强制退出标志，不执行后续战斗逻辑
+            if (gameState.battle.forceExit) {
+                console.log("检测到强制退出标志，停止战斗循环");
+                return;
+            }
+            
+            // 计算获得的经验值（根据层数给予经验）
+            const expGained = gameState.currentFloor * 20;
+            
+            // 添加经验
+            addExperience(expGained);
+            
+            // 添加战斗日志
+            addBattleLog(`战斗胜利！获得 ${expGained} 点经验值`);
+            
+            // 层数增加
+            gameState.currentFloor++;
+            
+            // 重置玩家血量为100%
+            gameState.player.currentHp = gameState.player.maxHp;
+            
+            // 立即更新血条显示
+            elements.battle.playerCurrentHp.textContent = gameState.player.currentHp;
+            elements.battle.playerMaxHp.textContent = gameState.player.maxHp;
+            elements.battle.playerHpPercent.textContent = '100';
+            elements.battle.playerHpProgress.style.width = '100%';
+            
+            addBattleLog(`进入下一层，玩家血量恢复满值！`);
+            
+            // 更新主界面的层数显示
+            updatePlayerStats();
+            
+            // 检查是否设置了强制退出标志或防止自动重启的标志
+            if (gameState.battle.forceExit || gameState.preventAutoRestart) {
+                console.log("检测到退出标志或防止自动重启标志，不进入下一层战斗");
+                return;
+            }
+            
+            console.log("准备进入下一层战斗");
+            // 自动开始下一层的战斗
+            setTimeout(startBattle, 500);
+        }
+
+        // 战斗失败
+        function battleDefeat() {
+            stopBattle();
+            
+            // 添加战斗日志
+            addBattleLog('战斗失败！');
+            
+            // 提示玩家选择是否重新挑战或返回主界面
+            if (confirm('战斗失败！是否重新挑战本层？\n点击"确定"重新挑战，点击"取消"返回主界面。')) {
+                // 玩家选择重新挑战
+                retryBattle();
+            } else {
+                // 玩家选择返回主界面
+                showScreen('main');
+            }
+        }
+
+        // 更新怪物血条
+        function updateEnemyHpBar() {
+            const e = gameState.battle;
+            const hpPercentage = Math.max(0, Math.min(100, (e.enemyCurrentHp / e.enemyMaxHp) * 100));
+            
+            elements.battle.enemyCurrentHp.textContent = e.enemyCurrentHp;
+            elements.battle.enemyHpPercent.textContent = Math.floor(hpPercentage);
+            elements.battle.enemyHpProgress.style.width = `${hpPercentage}%`;
+        }
+
+        // 添加战斗日志
+        function addBattleLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            elements.battle.logContainer.appendChild(logEntry);
+            
+            // 自动滚动到最新日志
+            elements.battle.logContainer.scrollTop = elements.battle.logContainer.scrollHeight;
+        }
+
+        // 重置游戏
+        function resetGame() {
+            // 添加确认对话框
+            if (!confirm('确定要重置游戏吗？所有进度将会丢失！')) {
+                return; // 如果用户取消，则中止操作
+            }
+            
+            // 停止战斗（如果正在进行）
+            if (gameState.battle.isActive) {
+                stopBattle();
+            }
+            
+            // 清除所有游戏相关的localStorage数据
+            for (let key in localStorage) {
+                if (key.startsWith('towerGame_')) {
+                    localStorage.removeItem(key);
+                }
+            }
+            
+            // 重置游戏状态到初始值
+            gameState.player = {
+                name: "", // 重置为空名称，而不是默认的"无名英雄"
+                level: 1,
+                attack: 10,
+                defense: 5,
+                maxHp: 1000,
+                currentHp: 1000,
+                critRate: 1,
+                critDamage: 200,
+                dodgeRate: 1,
+                idleExp: 10,
+                exp: 0,
+                expNeeded: 100
+            };
+            gameState.currentFloor = 1;
+            gameState.battle = {
+                isActive: false,
+                enemyMaxHp: 0,
+                enemyCurrentHp: 0,
+                enemyAttack: 0,
+                enemyDefense: 0,
+                enemyCritRate: 0,
+                enemyCritDamage: 0,
+                enemyDodgeRate: 0,
+                playerTurn: true,
+                battleInterval: null,
+                forceExit: false
+            };
+            gameState.equipment = {
+                weapon: null,
+                helmet: null,
+                armor: null,
+                pants: null,
+                ring1: null,
+                ring2: null,
+                necklace: null
+            };
+            gameState.equipmentBonus = {
+                attack: 0,
+                defense: 0,
+                maxHp: 0,
+                critRate: 0,
+                critDamage: 0,
+                dodgeRate: 0
+            };
+            gameState.inventory = [];
+            gameState.inventoryCapacity = 200;
+            
+            // 如果有任何计时器，尝试清除它们
+            if (gameState.idleEarningInterval) {
+                clearInterval(gameState.idleEarningInterval);
+            }
+            if (gameState.idleDropInterval) {
+                clearInterval(gameState.idleDropInterval);
+            }
+            if (gameState.autoSaveInterval) {
+                clearInterval(gameState.autoSaveInterval);
+            }
+            
+            // 重置角色名输入框
+            document.getElementById('character-name').value = '';
+            
+            // 更新装备和背包界面（如果这些函数存在）
+            if (typeof updateEquipmentSlots === 'function') {
+                updateEquipmentSlots();
+            }
+            if (typeof renderInventory === 'function') {
+                renderInventory();
+            }
+            
+            // 更新UI状态
+            updatePlayerStats();
+            
+            // 跳转到欢迎/角色创建界面
+            showScreen('welcome');
+            
+            console.log('游戏已完全重置');
+            alert('游戏已重置！请重新创建角色。');
+            
+            // 不再强制刷新页面，避免用户无法操作取名对话框
+        }
+
+        // 保存游戏数据
+        function saveGame() {
+            // 更新最后登录时间
+            gameState.lastLoginTime = Date.now();
+            
+            localStorage.setItem('towerGame_playerData', JSON.stringify(gameState.player));
+            localStorage.setItem('towerGame_currentFloor', gameState.currentFloor);
+            localStorage.setItem('towerGame_equipment', JSON.stringify(gameState.equipment));
+            localStorage.setItem('towerGame_inventory', JSON.stringify(gameState.inventory));
+            localStorage.setItem('towerGame_lastLoginTime', gameState.lastLoginTime);
+            console.log('游戏数据已保存，时间戳：' + gameState.lastLoginTime);
+        }
+        
+        // 加载游戏数据
+        function loadGame() {
+            try {
+                // 加载玩家数据
+                const playerData = JSON.parse(localStorage.getItem('towerGame_playerData'));
+                if (playerData) {
+                    gameState.player = playerData;
+                }
+                
+                // 加载当前层数
+                const currentFloor = localStorage.getItem('towerGame_currentFloor');
+                if (currentFloor) {
+                    gameState.currentFloor = parseInt(currentFloor);
+                }
+                
+                // 加载装备数据
+                const equipmentData = JSON.parse(localStorage.getItem('towerGame_equipment'));
+                if (equipmentData) {
+                    gameState.equipment = equipmentData;
+                }
+                
+                // 加载背包数据
+                const inventoryData = JSON.parse(localStorage.getItem('towerGame_inventory'));
+                if (inventoryData) {
+                    gameState.inventory = inventoryData;
+                }
+                
+                // 加载上次登录时间
+                const lastLoginTime = localStorage.getItem('towerGame_lastLoginTime');
+                if (lastLoginTime) {
+                    const lastLogin = parseInt(lastLoginTime);
+                    gameState.lastLoginTime = lastLogin;
+                    
+                    // 计算离线时间（秒）
+                    const currentTime = Date.now();
+                    const offlineTime = Math.floor((currentTime - lastLogin) / 1000);
+                    
+                    // 如果离线时间大于1分钟，计算离线收益
+                    if (offlineTime > 60) {
+                        calculateOfflineRewards(offlineTime);
+                    }
+                    
+                    // 更新最后登录时间为当前时间
+                    gameState.lastLoginTime = currentTime;
+                }
+                
+                console.log('游戏数据已加载');
+                
+                // 更新UI
+                updatePlayerStats();
+                updateEquipmentSlots();
+                renderInventory();
+            } catch (error) {
+                console.error('加载游戏数据时出错:', error);
+                // 不再自动重置游戏，而是显示欢迎界面让用户创建新角色
+                showScreen('welcome');
+            }
+        }
+        
+        // 计算离线收益
+        function calculateOfflineRewards(offlineSeconds) {
+            // 计算获得的总经验值
+            const totalExp = gameState.player.idleExp * offlineSeconds;
+            
+            // 计算离线时间（小时和分钟）
+            const hours = Math.floor(offlineSeconds / 3600);
+            const minutes = Math.floor((offlineSeconds % 3600) / 60);
+            const timeString = hours > 0 ? 
+                `${hours}小时${minutes}分钟` : 
+                `${minutes}分钟`;
+            
+            // 添加经验
+            addExperience(totalExp);
+            
+            // 生成装备的提示消息
+            let equipmentMessage = '';
+            let equipmentItems = [];
+            
+            // 有机会获得随机装备（每小时一次机会）
+            const equipmentChances = Math.floor(offlineSeconds / 3600);
+            if (equipmentChances > 0) {
+                // 根据离线时长随机生成0-equipmentChances件装备
+                const equipmentCount = Math.floor(Math.random() * (equipmentChances + 1));
+                
+                if (equipmentCount > 0) {
+                    // 为简化，这里直接添加诛仙剑或祝福项链为示例
+                    // 实际游戏中应该随机生成合适的装备
+                    for (let i = 0; i < equipmentCount; i++) {
+                        // 50%几率获得诛仙剑，50%几率获得祝福项链
+                        const itemName = Math.random() < 0.5 ? "诛仙剑" : "祝福项链";
+                        addSpecialItemToInventory(itemName);
+                        equipmentItems.push(itemName);
+                    }
+                    
+                    // 构建装备列表字符串
+                    equipmentMessage = `\n获得了${equipmentCount}件装备：\n${equipmentItems.join('\n')}`;
+                }
+            }
+            
+            // 获取玩家名称
+            const playerName = gameState.player.name || "无名英雄";
+            
+            // 弹出综合通知
+            alert(`欢迎回来，${playerName}！\n\n您离线了${timeString}\n获得了${totalExp}点经验值${equipmentMessage}`);
+            
+            // 保存登录时间
+            gameState.lastLoginTime = Date.now();
+            saveGame();
+        }
+        
+        // 自动保存功能
+        setInterval(saveGame, 30000); // 每30秒自动保存一次
+        
+        // 物品系统 - 定义物品数据
+        const gameItems = {
+            "诛仙剑": {
+                type: "weapon",
+                attack: 999,
+                defense: 999,
+                critRate: 50,
+                description: "传说中的神兵，拥有毁天灭地的力量"
+            },
+            "祝福项链": {
+                type: "necklace",
+                critRate: 100,
+                idleExp: 1000,
+                description: "佩戴者将获得开发者的祝福，大幅提升挂机经验获取"
+            }
+        };
+        
+        // 检查祝福码
+        function checkBlessingCode() {
+            const codeInput = document.getElementById('blessing-code');
+            const resultDisplay = document.getElementById('blessing-result');
+            const code = codeInput.value.trim();
+            
+            // 清空输入框
+            codeInput.value = "";
+            
+            // 辅助函数：检查玩家是否已拥有指定物品
+            function hasItem(itemName) {
+                // 检查背包
+                const inInventory = Array.isArray(gameState.inventory) && 
+                    gameState.inventory.some(item => item.name === itemName);
+                
+                // 检查已装备
+                const isEquipped = gameState.equipment && 
+                    Object.values(gameState.equipment).some(item => item && item.name === itemName);
+                
+                return inInventory || isEquipped;
+            }
+            
+            if (code === "YLL666") {
+                // 检查是否已拥有诛仙剑
+                if (hasItem("诛仙剑")) {
+                    resultDisplay.textContent = "您已拥有诛仙剑，不能重复获得！";
+                    resultDisplay.style.color = "#FF9800";
+                    return;
+                }
+                
+                // 获得诛仙剑
+                resultDisplay.textContent = "祝福码正确！获得传说中的神兵：诛仙剑";
+                resultDisplay.style.color = "#4CAF50";
+                addSpecialItemToInventory("诛仙剑");
+            } else if (code === "ZYF888") {
+                // 检查是否已拥有祝福项链
+                if (hasItem("祝福项链")) {
+                    resultDisplay.textContent = "您已拥有祝福项链，不能重复获得！";
+                    resultDisplay.style.color = "#FF9800";
+                    return;
+                }
+                
+                // 获得祝福项链
+                resultDisplay.textContent = "祝福码正确！获得神秘饰品：祝福项链";
+                resultDisplay.style.color = "#4CAF50";
+                addSpecialItemToInventory("祝福项链");
+            } else {
+                // 错误的祝福码
+                resultDisplay.textContent = "无效的祝福码，请重试";
+                resultDisplay.style.color = "#F44336";
+            }
+        }
+        
+        // 添加特殊物品到背包
+        function addSpecialItemToInventory(itemName) {
+            try {
+                // 检查物品是否存在
+                if (!gameItems[itemName]) {
+                    console.error(`物品 ${itemName} 不存在`);
+                    return;
+                }
+                
+                // 确保inventory是数组
+                if (!Array.isArray(gameState.inventory)) {
+                    gameState.inventory = [];
+                }
+                
+                // 检查玩家是否已经拥有该装备（背包中）
+                const alreadyInInventory = gameState.inventory.some(item => item.name === itemName);
+                
+                // 检查玩家是否已经装备了该装备
+                const alreadyEquipped = Object.values(gameState.equipment || {}).some(
+                    item => item && item.name === itemName
+                );
+                
+                // 如果已经拥有或装备，则不再添加
+                if (alreadyInInventory || alreadyEquipped) {
+                    alert(`您已经拥有 ${itemName}，不能重复获得！`);
+                    return;
+                }
+                
+                // 添加物品到背包
+                const item = {
+                    id: Date.now(), // 使用时间戳作为唯一ID
+                    name: itemName,
+                    ...gameItems[itemName]
+                };
+                
+                gameState.inventory.push(item);
+                console.log(`成功添加 ${itemName} 到背包`);
+                
+                // 更新背包界面（如果函数存在）
+                if (typeof renderInventory === 'function') {
+                    renderInventory();
+                } else {
+                    console.log('未找到renderInventory函数，尝试自动创建');
+                    // 添加一个基本的渲染背包函数
+                    window.renderInventory = function() {
+                        const container = document.getElementById('inventory-items');
+                        if (!container) return;
+                        
+                        // 清空容器
+                        container.innerHTML = '';
+                        
+                        // 遍历背包物品并创建UI元素
+                        gameState.inventory.forEach(item => {
+                            const itemElement = document.createElement('div');
+                            itemElement.className = 'inventory-item';
+                            itemElement.style.padding = '10px';
+                            itemElement.style.border = '1px solid #ddd';
+                            itemElement.style.borderRadius = '5px';
+                            itemElement.style.backgroundColor = '#f9f9f9';
+                            
+                            // 物品名称
+                            const nameElement = document.createElement('div');
+                            nameElement.style.fontWeight = 'bold';
+                            nameElement.style.color = '#9c27b0';
+                            nameElement.textContent = item.name;
+                            
+                            // 物品描述
+                            const descElement = document.createElement('div');
+                            descElement.style.fontSize = '12px';
+                            descElement.style.marginTop = '5px';
+                            descElement.textContent = item.description;
+                            
+                            // 物品属性
+                            const statsElement = document.createElement('div');
+                            statsElement.style.fontSize = '12px';
+                            statsElement.style.marginTop = '5px';
+                            
+                            if (item.attack) statsElement.innerHTML += `攻击: +${item.attack}<br>`;
+                            if (item.defense) statsElement.innerHTML += `防御: +${item.defense}<br>`;
+                            if (item.critRate) statsElement.innerHTML += `暴击率: +${item.critRate}%<br>`;
+                            if (item.idleExp) statsElement.innerHTML += `挂机经验: +${item.idleExp}<br>`;
+                            
+                            // 添加装备按钮
+                            const equipButton = document.createElement('button');
+                            equipButton.textContent = '装备';
+                            equipButton.style.marginTop = '10px';
+                            equipButton.style.padding = '5px 10px';
+                            equipButton.style.backgroundColor = '#2196f3';
+                            equipButton.style.color = 'white';
+                            equipButton.style.border = 'none';
+                            equipButton.style.borderRadius = '3px';
+                            equipButton.style.cursor = 'pointer';
+                            
+                            // 装备按钮点击事件
+                            equipButton.addEventListener('click', () => {
+                                equipItem(item);
+                            });
+                            
+                            // 组合所有元素
+                            itemElement.appendChild(nameElement);
+                            itemElement.appendChild(descElement);
+                            itemElement.appendChild(statsElement);
+                            itemElement.appendChild(equipButton);
+                            
+                            container.appendChild(itemElement);
+                        });
+                        
+                        // 如果背包为空，显示提示信息
+                        if (gameState.inventory.length === 0) {
+                            const emptyMessage = document.createElement('div');
+                            emptyMessage.textContent = '背包里没有物品';
+                            emptyMessage.style.padding = '20px';
+                            emptyMessage.style.textAlign = 'center';
+                            emptyMessage.style.color = '#999';
+                            container.appendChild(emptyMessage);
+                        }
+                    };
+                    
+                    // 尝试渲染背包
+                    renderInventory();
+                }
+                
+                // 自动保存游戏数据
+                saveGame();
+                
+                // 通知用户
+                alert(`成功获得物品: ${itemName}！请前往背包查看。`);
+            } catch (error) {
+                console.error('添加物品到背包时出错:', error);
+                alert(`添加物品时出错: ${error.message}`);
+            }
+        }
+        
+        // 装备物品
+        function equipItem(item) {
+            try {
+                // 检查装备类型是否有效
+                if (!item.type) {
+                    alert('无法装备：物品类型无效');
+                    return;
+                }
+                
+                // 确保equipment对象存在
+                if (typeof gameState.equipment !== 'object' || gameState.equipment === null) {
+                    gameState.equipment = {};
+                }
+                
+                // 卸下同类型的旧装备（如果有）
+                const oldEquipment = gameState.equipment[item.type];
+                if (oldEquipment) {
+                    // 将旧装备放回背包
+                    gameState.inventory.push(oldEquipment);
+                }
+                
+                // 从背包中移除物品
+                gameState.inventory = gameState.inventory.filter(i => i.id !== item.id);
+                
+                // 装备新物品
+                gameState.equipment[item.type] = item;
+                
+                // 更新装备加成
+                updateEquipmentBonus();
+                
+                // 更新玩家属性和UI
+                updatePlayerStats();
+                
+                // 更新装备和背包界面
+                if (typeof updateEquipmentSlots === 'function') {
+                    updateEquipmentSlots();
+                }
+                renderInventory();
+                
+                // 保存游戏
+                saveGame();
+                
+                // 通知用户
+                alert(`成功装备: ${item.name}`);
+            } catch (error) {
+                console.error('装备物品时出错:', error);
+                alert(`装备物品时出错: ${error.message}`);
+            }
+        }
+        
+        // 更新装备加成
+        function updateEquipmentBonus() {
+            // 重置加成
+            gameState.equipmentBonus = {
+                attack: 0,
+                defense: 0,
+                maxHp: 0,
+                critRate: 0,
+                critDamage: 0,
+                dodgeRate: 0,
+                idleExp: 0
+            };
+            
+            // 如果没有装备，直接返回
+            if (!gameState.equipment || typeof gameState.equipment !== 'object') {
+                return;
+            }
+            
+            // 计算所有装备的加成
+            for (const slot in gameState.equipment) {
+                const equipment = gameState.equipment[slot];
+                if (!equipment) continue;
+                
+                // 加上装备属性
+                if (equipment.attack) gameState.equipmentBonus.attack += equipment.attack;
+                if (equipment.defense) gameState.equipmentBonus.defense += equipment.defense;
+                if (equipment.maxHp) gameState.equipmentBonus.maxHp += equipment.maxHp;
+                if (equipment.critRate) gameState.equipmentBonus.critRate += equipment.critRate;
+                if (equipment.critDamage) gameState.equipmentBonus.critDamage += equipment.critDamage;
+                if (equipment.dodgeRate) gameState.equipmentBonus.dodgeRate += equipment.dodgeRate;
+                if (equipment.idleExp) gameState.equipmentBonus.idleExp += equipment.idleExp;
+            }
+            
+            // 更新玩家属性
+            const p = gameState.player;
+            const eb = gameState.equipmentBonus;
+            
+            // 更新基础属性
+            p.attack = 10 + (p.level - 1) * 2 + eb.attack;
+            p.defense = 5 + (p.level - 1) * 1 + eb.defense;
+            p.maxHp = 1000 + (p.level - 1) * 200 + eb.maxHp;
+            p.critRate = 1 + eb.critRate;
+            p.critDamage = 200 + eb.critDamage;
+            p.dodgeRate = 1 + eb.dodgeRate;
+            p.idleExp = 10 + eb.idleExp;
+            
+            // 确保血量不超过最大值
+            if (p.currentHp > p.maxHp) {
+                p.currentHp = p.maxHp;
+            }
+        }
+
+        // 更新装备槽位
+        function updateEquipmentSlots() {
+            const container = document.getElementById('equipment-slots');
+            if (!container) return;
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 定义装备槽位
+            const slots = [
+                { id: 'weapon', name: '武器' },
+                { id: 'helmet', name: '头盔' },
+                { id: 'armor', name: '盔甲' },
+                { id: 'pants', name: '裤子' },
+                { id: 'ring1', name: '戒指1' },
+                { id: 'ring2', name: '戒指2' },
+                { id: 'necklace', name: '项链' }
+            ];
+            
+            // 遍历槽位并创建UI元素
+            slots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'equipment-slot';
+                slotElement.style.padding = '10px';
+                slotElement.style.border = '1px solid #ddd';
+                slotElement.style.borderRadius = '5px';
+                slotElement.style.backgroundColor = '#f0f0f0';
+                
+                // 槽位名称
+                const nameElement = document.createElement('div');
+                nameElement.style.fontWeight = 'bold';
+                nameElement.textContent = slot.name;
+                
+                // 装备信息
+                const equipmentElement = document.createElement('div');
+                equipmentElement.style.minHeight = '60px';
+                equipmentElement.style.margin = '10px 0';
+                
+                const equipment = gameState.equipment[slot.id];
+                if (equipment) {
+                    // 显示已装备物品
+                    const itemName = document.createElement('div');
+                    itemName.style.color = '#9c27b0';
+                    itemName.style.fontWeight = 'bold';
+                    itemName.textContent = equipment.name;
+                    
+                    const itemStats = document.createElement('div');
+                    itemStats.style.fontSize = '12px';
+                    itemStats.style.marginTop = '5px';
+                    
+                    if (equipment.attack) itemStats.innerHTML += `攻击: +${equipment.attack}<br>`;
+                    if (equipment.defense) itemStats.innerHTML += `防御: +${equipment.defense}<br>`;
+                    if (equipment.critRate) itemStats.innerHTML += `暴击率: +${equipment.critRate}%<br>`;
+                    if (equipment.idleExp) itemStats.innerHTML += `挂机经验: +${equipment.idleExp}<br>`;
+                    
+                    // 卸下按钮
+                    const unequipButton = document.createElement('button');
+                    unequipButton.textContent = '卸下';
+                    unequipButton.style.marginTop = '5px';
+                    unequipButton.style.padding = '5px 10px';
+                    unequipButton.style.backgroundColor = '#f44336';
+                    unequipButton.style.color = 'white';
+                    unequipButton.style.border = 'none';
+                    unequipButton.style.borderRadius = '3px';
+                    unequipButton.style.cursor = 'pointer';
+                    
+                    // 卸下按钮点击事件
+                    unequipButton.addEventListener('click', () => {
+                        unequipItem(slot.id);
+                    });
+                    
+                    // 组合元素
+                    equipmentElement.appendChild(itemName);
+                    equipmentElement.appendChild(itemStats);
+                    equipmentElement.appendChild(unequipButton);
+                } else {
+                    // 显示空槽位
+                    equipmentElement.style.display = 'flex';
+                    equipmentElement.style.alignItems = 'center';
+                    equipmentElement.style.justifyContent = 'center';
+                    equipmentElement.style.color = '#999';
+                    equipmentElement.textContent = '未装备';
+                }
+                
+                // 组合所有元素
+                slotElement.appendChild(nameElement);
+                slotElement.appendChild(equipmentElement);
+                
+                container.appendChild(slotElement);
+            });
+        }
+        
+        // 卸下装备
+        function unequipItem(slotId) {
+            try {
+                // 确保装备存在
+                if (!gameState.equipment[slotId]) {
+                    alert('该槽位没有装备物品');
+                    return;
+                }
+                
+                // 确保背包不会溢出
+                if (gameState.inventory.length >= gameState.inventoryCapacity) {
+                    alert('背包已满，无法卸下装备');
+                    return;
+                }
+                
+                // 将装备移回背包
+                gameState.inventory.push(gameState.equipment[slotId]);
+                
+                // 清空装备槽
+                gameState.equipment[slotId] = null;
+                
+                // 更新装备加成和玩家属性
+                updateEquipmentBonus();
+                updatePlayerStats();
+                
+                // 更新UI
+                updateEquipmentSlots();
+                renderInventory();
+                
+                // 保存游戏
+                saveGame();
+                
+                // 通知用户
+                alert('已卸下装备');
+            } catch (error) {
+                console.error('卸下装备时出错:', error);
+                alert(`卸下装备时出错: ${error.message}`);
+            }
+        }
+        
+        // 退出战斗
+        function exitBattle() {
+            console.log("退出战斗按钮被点击");
+            
+            // 设置强制退出标志
+            gameState.battle.forceExit = true;
+            
+            // 强制停止所有战斗相关的计时器
+            if (gameState.battle.battleInterval) {
+                clearInterval(gameState.battle.battleInterval);
+                gameState.battle.battleInterval = null;
+            }
+            
+            // 清除所有可能的战斗相关的延迟任务
+            for (let i = 0; i < 1000; i++) {
+                clearTimeout(i);
+            }
+            
+            // 设置所有战斗状态为非激活
+            gameState.battle.isActive = false;
+            
+            // 恢复玩家血量为最大值
+            gameState.player.currentHp = gameState.player.maxHp;
+            
+            // 更新玩家属性显示
+            updatePlayerStats();
+            
+            // 添加日志记录
+            console.log("记录战斗退出日志");
+            if (elements.battle.logContainer) {
+                const logEntry = document.createElement('div');
+                logEntry.textContent = '玩家手动退出了战斗！';
+                elements.battle.logContainer.appendChild(logEntry);
+            }
+            
+            console.log("立即返回主界面");
+            // 确保隐藏战斗结果面板
+            if (elements.battle.battleResult) {
+                elements.battle.battleResult.classList.add('hidden');
+            }
+            
+            // 立即返回主界面，并设置一个标志，防止自动返回战斗
+            gameState.preventAutoRestart = true;
+            showScreen('main');
+            
+            // 5秒后清除防止自动返回战斗的标志
+            setTimeout(() => {
+                gameState.preventAutoRestart = false;
+                console.log("防自动返回战斗的保护已解除");
+            }, 5000);
         }
     </script>
 </body>
-</html>
+</html> 
